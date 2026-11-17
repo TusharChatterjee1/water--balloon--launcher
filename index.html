@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Water Balloon Launcher Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=IBM+Plex+Mono:wght@400;500&family=Public+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* Layout idea: an engineering notebook. Graph-paper page, one column of unit chapters,
+   each chapter = short notes on the left of a lab bench card (controls, canvas, readouts). */
+:root{
+  --paper:#f3f6fb; --surface:#ffffff; --ink:#14233b; --muted:#566782; --grid:#d6e0ee; --line:#b9c7db;
+  --blue:#1d58c7; --balloon:#e23d68; --el:#d98a09; --ek:#e23d68; --eg:#1d58c7; --good:#1b8a5a; --bad:#c2410c;
+  --display:"Bricolage Grotesque","Arial Narrow",Arial,sans-serif;
+  --body:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#0c1830; --surface:#12213f; --ink:#e7eefb; --muted:#9db0cf; --grid:#1b2f55; --line:#2c4474;
+    --blue:#7fb0ff; --balloon:#ff6b8f; --el:#f5b942; --ek:#ff6b8f; --eg:#7fb0ff; --good:#4ad19a; --bad:#ff9a62;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0c1830; --surface:#12213f; --ink:#e7eefb; --muted:#9db0cf; --grid:#1b2f55; --line:#2c4474;
+  --blue:#7fb0ff; --balloon:#ff6b8f; --el:#f5b942; --ek:#ff6b8f; --eg:#7fb0ff; --good:#4ad19a; --bad:#ff9a62;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:64px}
+body{margin:0;background-color:var(--paper);color:var(--ink);font:400 17px/1.55 var(--body);
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:24px 24px}
+.wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;line-height:1.05}
+h1{font-size:clamp(2.6rem,7vw,5rem);font-weight:800;letter-spacing:-.02em}
+h2{font-size:clamp(2rem,4.6vw,3.1rem);font-weight:800;letter-spacing:-.015em}
+h3{font-size:1.2rem;font-weight:800}
+p{margin:0;max-width:65ch}
+sub,sup{font-size:.72em;line-height:0}
+a{color:var(--blue)}
+:focus-visible{outline:3px solid var(--balloon);outline-offset:2px}
+
+nav.top{position:sticky;top:0;z-index:5;background:var(--surface);border-bottom:2px solid var(--ink)}
+nav.top .wrap{display:flex;gap:6px 18px;align-items:center;flex-wrap:wrap;padding-top:10px;padding-bottom:10px}
+nav.top b{font-family:var(--display);font-weight:800;margin-right:auto}
+nav.top a{font:500 .82rem var(--mono);color:var(--ink);text-decoration:none;padding:4px 0;border-bottom:2px solid transparent}
+nav.top a:hover{border-bottom-color:var(--balloon)}
+
+header.hero{padding:56px 0 40px}
+.hero .wrap{display:grid;grid-template-columns:1.25fr 1fr;gap:36px;align-items:end}
+.eyebrow{font:500 .8rem var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--blue);margin-bottom:12px}
+.hero p.lede{font-size:1.15rem;margin-top:18px}
+.proof{background:var(--surface);border:2px solid var(--ink);padding:20px;display:flex;flex-direction:column;gap:12px;box-shadow:6px 6px 0 var(--balloon)}
+.proof .pair{display:flex;gap:18px;align-items:baseline;flex-wrap:wrap}
+.proof .big{font:800 clamp(2rem,5vw,2.9rem)/1 var(--display);font-variant-numeric:tabular-nums}
+.proof .big small{font:500 .85rem var(--mono);color:var(--muted)}
+.proof .vs{font:500 .85rem var(--mono);color:var(--muted)}
+.proof p{font-size:.95rem;color:var(--muted)}
+
+section{padding:44px 0;border-top:2px solid var(--ink)}
+.unit-head{display:grid;grid-template-columns:1fr 1fr;gap:28px 40px;align-items:start;margin-bottom:26px}
+.unit-head>*,.bench>*,.two>*{min-width:0}
+.unit-head .notes{display:flex;flex-direction:column;gap:14px}
+.eqs{background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--blue);padding:16px 18px;display:flex;flex-direction:column;gap:8px}
+.eqs h3{font:500 .78rem var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.eq{font:500 1rem/1.5 var(--mono);overflow-x:auto;white-space:nowrap;max-width:none}
+.eq.wrapok{white-space:normal}
+.eq em{font-style:normal;color:var(--muted);font-weight:400}
+
+.lab{background:var(--surface);border:2px solid var(--ink);padding:20px;display:flex;flex-direction:column;gap:18px}
+.lab-title{display:flex;gap:12px;align-items:baseline;flex-wrap:wrap}
+.lab-title span{font:500 .78rem var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--surface);background:var(--ink);padding:3px 8px}
+.bench{display:grid;grid-template-columns:260px 1fr;gap:22px;align-items:start}
+.ctls{display:flex;flex-direction:column;gap:14px}
+.ctl{display:grid;grid-template-columns:1fr auto;gap:2px 10px;font-size:.92rem}
+.ctl input[type=range]{grid-column:1/-1;width:100%;accent-color:var(--balloon);margin:4px 0 0}
+.ctl output{font:500 .9rem var(--mono);font-variant-numeric:tabular-nums}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+button{font:600 .92rem var(--body);color:var(--ink);background:var(--surface);border:2px solid var(--ink);padding:8px 14px;cursor:pointer;border-radius:0}
+button:hover{background:var(--paper)}
+button.go{background:var(--balloon);border-color:var(--ink);color:#fff}
+:root[data-theme="dark"] button.go{color:#1a0a10}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) button.go{color:#1a0a10}}
+button.go:hover{filter:brightness(1.08)}
+button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
+button:disabled{cursor:default;opacity:.85}
+.views{display:flex;flex-direction:column;gap:14px;min-width:0}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+canvas{display:block;width:100%;background:var(--paper);border:1px solid var(--line)}
+.c-wide{aspect-ratio:16/8}.c-sq{aspect-ratio:4/3}.c-strip{aspect-ratio:16/5}
+.tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.tile{border:1px solid var(--line);padding:8px 10px;display:flex;flex-direction:column;gap:2px;background:var(--paper)}
+.tile span{font:400 .74rem var(--mono);color:var(--muted)}
+.tile b{font:500 1.12rem var(--mono);font-variant-numeric:tabular-nums}
+.pill{display:inline-block;font:500 .82rem var(--mono);padding:3px 10px;border:2px solid currentColor;align-self:flex-start}
+.pill.hit{color:var(--good)}.pill.miss{color:var(--bad)}.pill.info{color:var(--muted)}
+.note{font-size:.9rem;color:var(--muted)}
+.try{border-top:1px dashed var(--line);padding-top:14px;display:flex;flex-direction:column;gap:6px}
+.try h3{font:500 .78rem var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.try ol{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:4px;max-width:70ch}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.9rem;font-variant-numeric:tabular-nums}
+th,td{text-align:left;padding:6px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font:500 .74rem var(--mono);color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+td button{padding:3px 10px;font-size:.82rem}
+
+.quiz{margin-top:22px;display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.qq{background:var(--surface);border:1px solid var(--line);padding:16px;display:flex;flex-direction:column;gap:10px}
+.qq h3{font:500 .78rem var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.qq .opts{display:flex;flex-direction:column;gap:6px}
+.qq button{text-align:left;font-weight:400;border-width:1px}
+.qq button.right{border-color:var(--good);box-shadow:inset 5px 0 0 var(--good)}
+.qq button.wrong{border-color:var(--bad);box-shadow:inset 5px 0 0 var(--bad)}
+.qq .why{font-size:.92rem}
+.qq .why b.ok{color:var(--good)}.qq .why b.no{color:var(--bad)}
+
+.diagram{background:var(--surface);border:1px solid var(--line);padding:10px;overflow-x:auto}
+.diagram svg{display:block;width:100%;min-width:480px;height:auto}
+.diagram .wood{stroke:var(--ink);stroke-width:7;stroke-linecap:round;fill:none}
+.diagram .thin{stroke:var(--ink);stroke-width:1.5;fill:none}
+.diagram .band{stroke:var(--balloon);stroke-width:3.5;fill:none}
+.diagram .lead{stroke:var(--muted);stroke-width:1;fill:none}
+.diagram text{font:500 12px var(--mono);fill:var(--ink)}
+.diagram .gnd{stroke:var(--line);stroke-width:2}
+footer{border-top:2px solid var(--ink);padding:28px 0 60px;color:var(--muted);font-size:.9rem}
+footer .wrap{display:flex;gap:10px 30px;flex-wrap:wrap;justify-content:space-between}
+#score{font:500 .95rem var(--mono);color:var(--ink)}
+
+@media (max-width:860px){
+  .hero .wrap,.unit-head,.bench,.quiz{grid-template-columns:1fr}
+}
+@media (max-width:560px){
+  .two{grid-template-columns:1fr}
+  .tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .c-wide{aspect-ratio:4/3}.c-strip{aspect-ratio:16/9}
+  body{font-size:16px}
+}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+
+<nav class="top" aria-label="Units">
+  <div class="wrap">
+    <b>Water Balloon Launcher Lab</b>
+    <a href="#launcher">Launcher</a>
+    <a href="#kinematics">1 Kinematics</a>
+    <a href="#forces">2 Forces</a>
+    <a href="#energy">3 Energy</a>
+    <a href="#momentum">4 Momentum</a>
+    <a href="#accuracy">Accuracy test</a>
+    <a href="3d/">3D model</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <div>
+      <div class="eyebrow">AP Physics 1 · Units 1 to 4</div>
+      <h1>Same pullback, same landing spot.</h1>
+      <p class="lede">We launched water balloons with a resistance band held by two people. It was hard to hit the target because every shot came out different. This site uses our launcher to explain kinematics, forces, energy, and momentum. Each unit has a lab you can run yourself.</p>
+    </div>
+    <aside class="proof" aria-label="Our launch data">
+      <div class="eyebrow" style="margin:0">From our real launches</div>
+      <div class="pair">
+        <div class="big">17.99 <small>m/s</small></div>
+        <div class="vs">vs</div>
+        <div class="big">14.91 <small>m/s</small></div>
+      </div>
+      <p>Both launches used a 1.8 m pullback. The speeds should match, but they are 3 m/s apart. Our spring constants were also all over the place: 93, 88, 30, and 57 N/m.</p>
+    </aside>
+  </div>
+</header>
+
+<main>
+
+<!-- ============ LAUNCHER ============ -->
+<section id="launcher">
+  <div class="wrap">
+    <div class="unit-head">
+      <div class="notes">
+        <div class="eyebrow">Our modification</div>
+        <h2>A fixed frame with a pullback stop</h2>
+        <p>The problem is how the band is held. Two people hold it at different heights, and they get pulled forward when the band snaps. So the height, direction, and stretch change every shot.</p>
+        <p>Our fix is a 5 ft wooden frame. The band is tied to the tops of two posts, so it is always at the same height and width. Distance markers on the base rails and a small wooden peg set the pullback. The pouch is pulled back to the peg, so every shot from the same marker has the same stretch.</p>
+      </div>
+      <div class="diagram">
+        <svg viewBox="0 0 540 250" role="img" aria-label="Side view of the wooden frame launcher with a post, brace, base rail, distance markers, peg, and band">
+          <line class="gnd" x1="10" y1="212" x2="530" y2="212"/>
+          <line class="wood" x1="60" y1="205" x2="470" y2="205"/>
+          <line class="wood" x1="400" y1="205" x2="400" y2="62"/>
+          <line class="wood" x1="330" y1="203" x2="398" y2="120"/>
+          <g class="thin">
+            <line x1="100" y1="196" x2="100" y2="214"/><line x1="140" y1="196" x2="140" y2="214"/>
+            <line x1="180" y1="196" x2="180" y2="214"/><line x1="220" y1="196" x2="220" y2="214"/>
+            <line x1="260" y1="196" x2="260" y2="214"/><line x1="300" y1="196" x2="300" y2="214"/>
+            <line x1="455" y1="196" x2="462" y2="226"/><line x1="72" y1="196" x2="65" y2="226"/>
+          </g>
+          <rect x="176" y="178" width="8" height="24" fill="var(--blue)"/>
+          <line class="band" x1="400" y1="64" x2="196" y2="172"/>
+          <circle cx="192" cy="168" r="11" fill="var(--balloon)"/>
+          <g class="lead">
+            <line x1="400" y1="62" x2="440" y2="40"/><line x1="364" y1="160" x2="440" y2="150"/>
+            <line x1="300" y1="118" x2="270" y2="80"/><line x1="180" y1="178" x2="130" y2="140"/>
+            <line x1="240" y1="214" x2="240" y2="236"/><line x1="462" y1="226" x2="478" y2="236"/>
+          </g>
+          <text x="444" y="38">post, 5 ft</text>
+          <text x="444" y="154">brace</text>
+          <text x="216" y="74">band</text>
+          <text x="40" y="134">peg (pullback stop)</text>
+          <text x="170" y="247">distance markers on the 8 ft base rail</text>
+          <text x="482" y="247">stake</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ UNIT 1 ============ -->
+<section id="kinematics">
+  <div class="wrap">
+    <div class="unit-head">
+      <div class="notes">
+        <div class="eyebrow">Unit 1</div>
+        <h2>Kinematics</h2>
+        <p>After the balloon leaves the band, it is a projectile. Its motion splits into two parts that do not affect each other. Sideways, nothing pushes it, so v<sub>x</sub> stays the same. Up and down, gravity changes v<sub>y</sub> by 9.8 m/s every second.</p>
+        <p>This is why the frame helps. If the launch speed v<sub>0</sub> and the angle θ<sub>0</sub> are the same every shot, the path is the same every shot, and we can predict the landing distance Δx.</p>
+      </div>
+      <div class="eqs">
+        <h3>Equations</h3>
+        <p class="eq">v<sub>0x</sub> = v<sub>0</sub> cos θ<sub>0</sub> &nbsp;&nbsp; v<sub>0y</sub> = v<sub>0</sub> sin θ<sub>0</sub></p>
+        <p class="eq">Δx = v<sub>0x</sub> t</p>
+        <p class="eq">Δy = v<sub>0y</sub> t + ½at² &nbsp;<em>with a = −g</em></p>
+        <p class="eq">v<sub>fy</sub> = v<sub>0y</sub> + at</p>
+        <p class="eq">H = h + v<sub>0y</sub>² / (2g)</p>
+      </div>
+    </div>
+
+    <div class="lab">
+      <div class="lab-title"><span>Lab 1</span><h3>Hit the target</h3></div>
+      <div class="bench">
+        <div class="ctls">
+          <label class="ctl"><span>Launch speed v<sub>0</sub></span> <output id="k-v-o"></output><input type="range" id="k-v" min="5" max="30" step="0.01" value="17"></label>
+          <label class="ctl"><span>Launch angle θ<sub>0</sub></span> <output id="k-th-o"></output><input type="range" id="k-th" min="5" max="85" step="0.1" value="40"></label>
+          <label class="ctl"><span>Launch height h</span> <output id="k-h-o"></output><input type="range" id="k-h" min="0" max="2" step="0.01" value="1.52"></label>
+          <label class="ctl"><span>Target distance</span> <output id="k-T-o"></output><input type="range" id="k-T" min="5" max="70" step="0.1" value="35"></label>
+          <div class="btns"><button class="go" id="k-go" type="button">Launch</button><button id="k-clear" type="button">Clear old paths</button></div>
+          <span class="pill info" id="k-status">Ready</span>
+        </div>
+        <div class="views">
+          <canvas id="k-c" class="c-wide" role="img" aria-label="Graph of the balloon's path from the launcher to the ground"></canvas>
+          <div class="tiles">
+            <div class="tile"><span>v0x (m/s)</span><b id="k-vx"></b></div>
+            <div class="tile"><span>v0y (m/s)</span><b id="k-vy"></b></div>
+            <div class="tile"><span>time in air (s)</span><b id="k-tf"></b></div>
+            <div class="tile"><span>landing Δx (m)</span><b id="k-xf"></b></div>
+            <div class="tile"><span>max height H (m)</span><b id="k-H"></b></div>
+            <div class="tile"><span>landing speed vf (m/s)</span><b id="k-vf"></b></div>
+          </div>
+        </div>
+      </div>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Our data</th><th>Height</th><th>v0</th><th>Angle</th><th>Measured Δx</th><th>Measured time</th><th></th></tr></thead>
+          <tbody id="k-data"></tbody>
+        </table>
+      </div>
+      <div class="try">
+        <h3>Try this</h3>
+        <ol>
+          <li>Press Launch and watch the two arrows on the balloon. Which one never changes?</li>
+          <li>Keep v<sub>0</sub> at 17 m/s and find the angle that goes the farthest. Is it exactly 45°?</li>
+          <li>Load Trial 1 and Trial 2. They had the same pullback but different angles. Which one stayed in the air longer, and which one went farther?</li>
+        </ol>
+      </div>
+    </div>
+    <div class="quiz" data-unit="kinematics"></div>
+  </div>
+</section>
+
+<!-- ============ UNIT 2 ============ -->
+<section id="forces">
+  <div class="wrap">
+    <div class="unit-head">
+      <div class="notes">
+        <div class="eyebrow">Unit 2</div>
+        <h2>Forces</h2>
+        <p>The band acts like a spring. The more it is stretched, the harder it pulls. If the pullback x<sub>1</sub> is the same every time, the force on the balloon is the same every time. The peg makes that happen.</p>
+        <p>The band also pulls on the frame with the same size force in the opposite direction (Newton's third law). When people held the band, that force pulled their hands around. The braces and stakes push back on the frame, so its net force is zero and it does not move.</p>
+      </div>
+      <div class="eqs">
+        <h3>Equations</h3>
+        <p class="eq">F<sub>s</sub> = k x<sub>1</sub> &nbsp;<em>spring force</em></p>
+        <p class="eq">F<sub>g</sub> = mg &nbsp;<em>weight</em></p>
+        <p class="eq">ΣF = ma &nbsp;<em>Newton's second law</em></p>
+        <p class="eq">F<sub>band on frame</sub> = −F<sub>frame on band</sub></p>
+      </div>
+    </div>
+
+    <div class="lab">
+      <div class="lab-title"><span>Lab 2</span><h3>Stretch the band</h3></div>
+      <div class="bench">
+        <div class="ctls">
+          <label class="ctl"><span>Pullback x<sub>1</sub></span> <output id="f-x-o"></output><input type="range" id="f-x" min="0" max="1.8" step="0.01" value="0.82"></label>
+          <label class="ctl"><span>Spring constant k</span> <output id="f-k-o"></output><input type="range" id="f-k" min="20" max="120" step="1" value="90"></label>
+          <div class="tiles" style="grid-template-columns:1fr 1fr">
+            <div class="tile"><span>band force Fs (N)</span><b id="f-F"></b></div>
+            <div class="tile"><span>weight Fg (N)</span><b id="f-W"></b></div>
+            <div class="tile"><span>Fs compared to Fg</span><b id="f-ratio"></b></div>
+            <div class="tile"><span>area under graph (J)</span><b id="f-area"></b></div>
+          </div>
+          <p class="note">Arrow lengths are squeezed so the small weight arrow still shows.</p>
+        </div>
+        <div class="views">
+          <div class="two">
+            <canvas id="f-scene" class="c-sq" role="img" aria-label="Side view of the frame with the band stretched and force arrows"></canvas>
+            <canvas id="f-graph" class="c-sq" role="img" aria-label="Graph of band force against pullback"></canvas>
+          </div>
+          <div class="btns" role="group" aria-label="Free body diagram moment">
+            <button type="button" data-fbd="held" aria-pressed="true">Held at the peg</button>
+            <button type="button" data-fbd="launch" aria-pressed="false">Just released</button>
+            <button type="button" data-fbd="flight" aria-pressed="false">In the air</button>
+          </div>
+          <div class="two">
+            <canvas id="f-fbd" class="c-sq" role="img" aria-label="Free body diagram of the balloon"></canvas>
+            <div class="tiles" style="grid-template-columns:1fr;align-content:start">
+              <div class="tile"><span>forces on the balloon</span><b id="f-list" style="font-size:.95rem"></b></div>
+              <div class="tile"><span>net force ΣF (N)</span><b id="f-net"></b></div>
+              <div class="tile"><span>acceleration a = ΣF / m (m/s²)</span><b id="f-a"></b></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="try">
+        <h3>Try this</h3>
+        <ol>
+          <li>Move the pullback from 0.4 m to 0.8 m. What happens to the band force?</li>
+          <li>Switch the free body diagram to "In the air." How many forces are left, and which way is the acceleration?</li>
+          <li>Look at the arrow on the post. Why does the frame need braces and stakes?</li>
+        </ol>
+      </div>
+    </div>
+    <div class="quiz" data-unit="forces"></div>
+  </div>
+</section>
+
+<!-- ============ UNIT 3 ============ -->
+<section id="energy">
+  <div class="wrap">
+    <div class="unit-head">
+      <div class="notes">
+        <div class="eyebrow">Unit 3</div>
+        <h2>Energy</h2>
+        <p>Pulling the band back stores elastic energy. When we let go, that energy turns into kinetic energy. On the way up, some kinetic energy turns into gravitational energy, and on the way down it turns back. The total stays the same the whole time.</p>
+        <p>A fixed pullback means the same stored energy every shot. The same stored energy means the same launch speed. That is the main reason the peg makes the launcher more accurate.</p>
+      </div>
+      <div class="eqs">
+        <h3>Equations</h3>
+        <p class="eq">E<sub>el,i</sub> + KE<sub>i</sub> + PE<sub>i</sub> = E<sub>el,f</sub> + KE<sub>f</sub> + PE<sub>f</sub></p>
+        <p class="eq">E<sub>el</sub> = ½kx<sub>1</sub>² &nbsp; KE = ½mv² &nbsp; PE = mgh</p>
+        <p class="eq">½kx<sub>1</sub>² = ½mv<sub>0</sub>² &nbsp;<em>band to launch</em></p>
+        <p class="eq">v<sub>0</sub> = x<sub>1</sub>√(k/m)</p>
+      </div>
+    </div>
+
+    <div class="lab">
+      <div class="lab-title"><span>Lab 3</span><h3>Follow the energy</h3></div>
+      <div class="bench">
+        <div class="ctls">
+          <label class="ctl"><span>Pullback x<sub>1</sub></span> <output id="e-x-o"></output><input type="range" id="e-x" min="0.2" max="1.8" step="0.01" value="0.82"></label>
+          <label class="ctl"><span>Spring constant k</span> <output id="e-k-o"></output><input type="range" id="e-k" min="20" max="120" step="1" value="90"></label>
+          <label class="ctl"><span>Launch angle θ<sub>0</sub></span> <output id="e-th-o"></output><input type="range" id="e-th" min="10" max="80" step="1" value="40"></label>
+          <label class="ctl"><span>Moment in the launch</span> <output id="e-s-o"></output><input type="range" id="e-s" min="0" max="1000" step="1" value="0"></label>
+          <div class="btns"><button class="go" id="e-go" type="button">Play</button><button id="e-peak" type="button">Jump to highest point</button></div>
+          <p class="note">Balloon mass is 0.2 kg and launch height is 1.52 m (our frame).</p>
+        </div>
+        <div class="views">
+          <div class="two">
+            <canvas id="e-path" class="c-sq" role="img" aria-label="Path of the balloon with its current position"></canvas>
+            <canvas id="e-bars" class="c-sq" role="img" aria-label="Bar chart of elastic, kinetic, and gravitational energy"></canvas>
+          </div>
+          <div class="tiles">
+            <div class="tile"><span>elastic (J)</span><b id="e-el"></b></div>
+            <div class="tile"><span>kinetic (J)</span><b id="e-ek"></b></div>
+            <div class="tile"><span>gravitational (J)</span><b id="e-eg"></b></div>
+            <div class="tile"><span>total (J)</span><b id="e-tot"></b></div>
+            <div class="tile"><span>launch speed v0 (m/s)</span><b id="e-v0"></b></div>
+            <div class="tile"><span>speed now (m/s)</span><b id="e-v"></b></div>
+          </div>
+          <p class="note">Model limit: a real band is not a perfect spring. At a 1.8 m pullback this model gives about 38 m/s, but our real launch was about 18 m/s. We will use test data from the frame to pick the k that matches each marker.</p>
+        </div>
+      </div>
+      <div class="try">
+        <h3>Try this</h3>
+        <ol>
+          <li>Set the pullback to 0.5 m, then 1.0 m. The pullback doubled. How many times bigger is the stored energy?</li>
+          <li>Jump to the highest point. Why is the kinetic bar not zero?</li>
+          <li>Change the angle and check the total. Does the angle change how much energy the balloon has?</li>
+        </ol>
+      </div>
+    </div>
+    <div class="quiz" data-unit="energy"></div>
+  </div>
+</section>
+
+<!-- ============ UNIT 4 ============ -->
+<section id="momentum">
+  <div class="wrap">
+    <div class="unit-head">
+      <div class="notes">
+        <div class="eyebrow">Unit 4</div>
+        <h2>Momentum</h2>
+        <p>The balloon starts with zero momentum. The band pushes it for a short time, and that push is an impulse. The impulse equals the change in momentum. On a force vs time graph, the impulse is the area under the curve.</p>
+        <p>With the frame, the band gives the same force for the same amount of time, so the balloon gets the same impulse and leaves with the same momentum. When people held the band, their arms moved forward and took away some of that push.</p>
+      </div>
+      <div class="eqs">
+        <h3>Equations</h3>
+        <p class="eq">p = mv</p>
+        <p class="eq">J = F<sub>avg</sub> Δt = Δp</p>
+        <p class="eq">Δp = mv<sub>0</sub> − 0 &nbsp;<em>starts at rest</em></p>
+        <p class="eq">v<sub>0</sub> = J / m</p>
+      </div>
+    </div>
+
+    <div class="lab">
+      <div class="lab-title"><span>Lab 4</span><h3>Measure the push</h3></div>
+      <div class="bench">
+        <div class="ctls">
+          <label class="ctl"><span>Pullback x<sub>1</sub></span> <output id="m-x-o"></output><input type="range" id="m-x" min="0.2" max="1.8" step="0.01" value="0.82"></label>
+          <label class="ctl"><span>Spring constant k</span> <output id="m-k-o"></output><input type="range" id="m-k" min="20" max="120" step="1" value="90"></label>
+          <label class="ctl"><span>Balloon mass m</span> <output id="m-m-o"></output><input type="range" id="m-m" min="0.1" max="0.5" step="0.01" value="0.2"></label>
+          <p class="note">The curve is the band force while it pushes the balloon. It starts at kx<sub>1</sub> and drops to zero when the band is no longer stretched. The dashed box is the average force. It has the same area as the curve.</p>
+        </div>
+        <div class="views">
+          <canvas id="m-c" class="c-wide" role="img" aria-label="Graph of band force against time during the launch"></canvas>
+          <div class="tiles">
+            <div class="tile"><span>push time Δt (s)</span><b id="m-dt"></b></div>
+            <div class="tile"><span>biggest force (N)</span><b id="m-Fmax"></b></div>
+            <div class="tile"><span>average force (N)</span><b id="m-Favg"></b></div>
+            <div class="tile"><span>impulse J (N·s)</span><b id="m-J"></b></div>
+            <div class="tile"><span>momentum p (kg·m/s)</span><b id="m-p"></b></div>
+            <div class="tile"><span>launch speed v0 (m/s)</span><b id="m-v"></b></div>
+          </div>
+        </div>
+      </div>
+      <div class="try">
+        <h3>Try this</h3>
+        <ol>
+          <li>Use 0.82 m, 90 N/m, and 0.2 kg. Compare the launch speed here to the Energy lab with the same settings. Do the two methods agree?</li>
+          <li>Make the balloon heavier. The impulse goes up, but the launch speed goes down. Why?</li>
+          <li>Find two different settings that give the same impulse.</li>
+        </ol>
+      </div>
+    </div>
+    <div class="quiz" data-unit="momentum"></div>
+  </div>
+</section>
+
+<!-- ============ ACCURACY ============ -->
+<section id="accuracy">
+  <div class="wrap">
+    <div class="unit-head">
+      <div class="notes">
+        <div class="eyebrow">All four units together</div>
+        <h2>Hand-held vs. frame</h2>
+        <p>This lab puts everything together. Each shot gets a pullback, an angle, and a height. Energy sets the launch speed, and kinematics gives the landing spot.</p>
+        <p>For the hand-held launcher, the pullback, angle, and height change a little each shot, like in our trials (heights from 115 to 135 cm). For the frame, they barely change. A shot counts as a hit if it lands within 1 m of the target.</p>
+      </div>
+      <div class="eqs">
+        <h3>What changes each shot</h3>
+        <p class="eq wrapok">Hand-held: x<sub>1</sub> ± 8%, θ<sub>0</sub> ± 6°, h 1.15 to 1.35 m</p>
+        <p class="eq wrapok">Frame: x<sub>1</sub> ± 1%, θ<sub>0</sub> ± 1.5°, h fixed at 1.52 m</p>
+        <p class="note">These amounts are our estimates for the model. They are not measured data. Our real tests on the frame will replace them.</p>
+      </div>
+    </div>
+
+    <div class="lab">
+      <div class="lab-title"><span>Lab 5</span><h3>Launch 5 and compare</h3></div>
+      <div class="btns">
+        <button class="go" id="a-hand" type="button">Launch 5 hand-held</button>
+        <button class="go" id="a-frame" type="button">Launch 5 with the frame</button>
+        <button id="a-clear" type="button">Clear</button>
+      </div>
+      <canvas id="a-c" class="c-strip" role="img" aria-label="Landing spots for hand-held and frame launches compared to the target"></canvas>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Launcher</th><th>Shots</th><th>Hits (within 1 m)</th><th>Spread (farthest − shortest)</th><th>Speed range</th></tr></thead>
+          <tbody>
+            <tr><td>Hand-held</td><td id="a-h-n">0</td><td id="a-h-hit">0</td><td id="a-h-sp">none yet</td><td id="a-h-v">none yet</td></tr>
+            <tr><td>Frame</td><td id="a-f-n">0</td><td id="a-f-hit">0</td><td id="a-f-sp">none yet</td><td id="a-f-v">none yet</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="try">
+        <h3>Try this</h3>
+        <ol>
+          <li>Launch 5 of each. Our success goal is landing within 1 to 2 m of each other. Which launcher meets it?</li>
+          <li>Keep launching until each has 20 shots. Does the spread get bigger or smaller with more shots?</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>AP Physics 1 · Water Balloon Modification Project · 2026</span>
+    <span id="score">Quiz score: 0 of 8</span>
+  </div>
+</footer>
+
+<script>
+(function(){
+"use strict";
+const $=id=>document.getElementById(id), G=9.8, M=0.2;
+const fmt=(v,d=2)=>Number(v).toFixed(d);
+const reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const FONT='12px "IBM Plex Mono", ui-monospace, monospace';
+
+/* ---------- theme tokens for canvas ---------- */
+let TH=null;
+function theme(){
+  if(TH) return TH;
+  const s=getComputedStyle(document.documentElement), g=n=>s.getPropertyValue(n).trim();
+  TH={paper:g('--paper'),surface:g('--surface'),ink:g('--ink'),muted:g('--muted'),grid:g('--grid'),line:g('--line'),
+      blue:g('--blue'),balloon:g('--balloon'),el:g('--el'),ek:g('--ek'),eg:g('--eg'),good:g('--good'),bad:g('--bad')};
+  return TH;
+}
+const canvases=[];
+function mk(id,draw){
+  const c=$(id), ctx=c.getContext('2d');
+  const o={draw(){
+    const r=c.getBoundingClientRect(), d=window.devicePixelRatio||1, w=Math.max(160,r.width), h=Math.max(100,r.height);
+    const W=Math.round(w*d), H=Math.round(h*d);
+    if(c.width!==W||c.height!==H){c.width=W;c.height=H;}
+    ctx.setTransform(d,0,0,d,0,0); ctx.clearRect(0,0,w,h); ctx.font=FONT; ctx.lineJoin='round'; ctx.lineCap='round';
+    draw(ctx,w,h);
+  }};
+  if(window.ResizeObserver) new ResizeObserver(()=>o.draw()).observe(c);
+  canvases.push(o); return o;
+}
+function redrawAll(){TH=null; canvases.forEach(o=>o.draw());}
+new MutationObserver(redrawAll).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',redrawAll);
+if(document.fonts&&document.fonts.ready) document.fonts.ready.then(redrawAll);
+window.addEventListener('resize',redrawAll);
+
+/* ---------- drawing helpers ---------- */
+function line(ctx,x1,y1,x2,y2){ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();}
+function arrow(ctx,x1,y1,x2,y2,color,w=2.5){
+  const a=Math.atan2(y2-y1,x2-x1), L=Math.hypot(x2-x1,y2-y1); if(L<2) return;
+  const hd=Math.min(9,L*0.6);
+  ctx.save(); ctx.strokeStyle=color; ctx.fillStyle=color; ctx.lineWidth=w;
+  line(ctx,x1,y1,x2-Math.cos(a)*hd*0.7,y2-Math.sin(a)*hd*0.7);
+  ctx.beginPath(); ctx.moveTo(x2,y2);
+  ctx.lineTo(x2-hd*Math.cos(a-0.45),y2-hd*Math.sin(a-0.45));
+  ctx.lineTo(x2-hd*Math.cos(a+0.45),y2-hd*Math.sin(a+0.45)); ctx.closePath(); ctx.fill(); ctx.restore();
+}
+function balloon(ctx,x,y,r,color){
+  ctx.save(); ctx.fillStyle=color; ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,.55)'; ctx.beginPath(); ctx.arc(x-r*0.35,y-r*0.35,r*0.22,0,Math.PI*2); ctx.fill(); ctx.restore();
+}
+function label(ctx,t,x,y,color,align='left',base='middle'){ctx.save();ctx.fillStyle=color;ctx.textAlign=align;ctx.textBaseline=base;ctx.fillText(t,x,y);ctx.restore();}
+function niceStep(max,n){const raw=max/n, p=Math.pow(10,Math.floor(Math.log10(raw))), f=raw/p; return (f<=1?1:f<=2?2:f<=5?5:10)*p;}
+function plot(ctx,w,h,xMax,yMax,xl,yl,xs,ys,xd=1,yd=0){
+  const c=theme(), m={l:46,r:14,t:22,b:36}, pw=w-m.l-m.r, ph=h-m.t-m.b;
+  const X=x=>m.l+x/xMax*pw, Y=y=>m.t+ph-y/yMax*ph;
+  ctx.lineWidth=1; ctx.strokeStyle=c.grid;
+  for(let x=0;x<=xMax+1e-9;x+=xs){line(ctx,X(x),m.t,X(x),m.t+ph); label(ctx,fmt(x,xd),X(x),m.t+ph+6,c.muted,'center','top');}
+  for(let y=0;y<=yMax+1e-9;y+=ys){line(ctx,m.l,Y(y),m.l+pw,Y(y)); label(ctx,fmt(y,yd),m.l-6,Y(y),c.muted,'right');}
+  ctx.strokeStyle=c.ink; ctx.lineWidth=2; line(ctx,m.l,m.t,m.l,m.t+ph); line(ctx,m.l,m.t+ph,m.l+pw,m.t+ph);
+  label(ctx,xl,m.l+pw,h-4,c.muted,'right','bottom'); label(ctx,yl,m.l,4,c.muted,'left','top');
+  return {X,Y,m,pw,ph};
+}
+
+/* ---------- projectile physics ---------- */
+function proj(v,deg,h){
+  const th=deg*Math.PI/180, vx=v*Math.cos(th), vy=v*Math.sin(th);
+  const tf=(vy+Math.sqrt(vy*vy+2*G*h))/G, xf=vx*tf, H=h+vy*vy/(2*G), vfy=vy-G*tf;
+  return {v,deg,h,vx,vy,tf,xf,H,vfy,vf:Math.hypot(vx,vfy),tp:vy/G,
+          at(t){return {x:vx*t,y:Math.max(0,h+vy*t-0.5*G*t*t),vy:vy-G*t};}};
+}
+/* world view shared by Lab 1 and Lab 3. Same scale on both axes so angles look right. */
+function drawWorld(ctx,w,h,S,o){
+  o=o||{}; const c=theme(), m={l:40,r:14,t:18,b:30}, pw=w-m.l-m.r, ph=h-m.t-m.b;
+  let xN=Math.max(S.xf,o.T||0), yN=S.H;
+  (o.ghosts||[]).forEach(g=>{xN=Math.max(xN,g.xf); yN=Math.max(yN,g.H);});
+  xN=xN*1.08+2; yN=yN*1.22+1.5;
+  const s=Math.min(pw/xN,ph/yN), X=x=>m.l+x*s, Y=y=>m.t+ph-y*s, xM=pw/s, yM=ph/s, st=niceStep(xM,7), d=st<1?1:0;
+  ctx.lineWidth=1; ctx.strokeStyle=c.grid;
+  for(let x=0;x<=xM+1e-9;x+=st){line(ctx,X(x),m.t,X(x),m.t+ph); label(ctx,fmt(x,d),X(x),m.t+ph+6,c.muted,'center','top');}
+  for(let y=st;y<=yM+1e-9;y+=st){line(ctx,m.l,Y(y),m.l+pw,Y(y)); label(ctx,fmt(y,d),m.l-6,Y(y),c.muted,'right');}
+  label(ctx,'Δx (m)',m.l+pw,m.t+ph-5,c.muted,'right','bottom'); label(ctx,'height (m)',m.l+4,3,c.muted,'left','top');
+  ctx.strokeStyle=c.ink; ctx.lineWidth=2; line(ctx,m.l,Y(0),m.l+pw,Y(0));
+  if(o.T){
+    ctx.save(); ctx.globalAlpha=.3; ctx.fillStyle=c.good; ctx.fillRect(X(o.T-1),Y(0)-5,2*s,10); ctx.restore();
+    ctx.strokeStyle=c.good; ctx.lineWidth=2; line(ctx,X(o.T),Y(0),X(o.T),Y(0)-26);
+    ctx.fillStyle=c.good; ctx.beginPath(); ctx.moveTo(X(o.T),Y(0)-26); ctx.lineTo(X(o.T)+12,Y(0)-21); ctx.lineTo(X(o.T),Y(0)-16); ctx.fill();
+    label(ctx,o.Tlabel||'target',X(o.T)+4,Y(0)-34,c.good,X(o.T)>m.l+pw-90?'right':'left','bottom');
+  }
+  ctx.strokeStyle=c.ink; ctx.lineWidth=5; line(ctx,X(0),Y(0),X(0),Y(S.h));
+  const path=(P,color,dash,lw)=>{ctx.save(); ctx.strokeStyle=color; ctx.lineWidth=lw; ctx.setLineDash(dash); ctx.beginPath();
+    for(let i=0;i<=80;i++){const p=P.at(P.tf*i/80); i?ctx.lineTo(X(p.x),Y(p.y)):ctx.moveTo(X(p.x),Y(p.y));} ctx.stroke(); ctx.restore();};
+  (o.ghosts||[]).forEach(g=>path(g,c.line,[5,5],1.5));
+  path(S,c.blue,[],2.5);
+  const pk=S.at(S.tp); ctx.strokeStyle=c.blue; ctx.lineWidth=1.5; ctx.fillStyle=c.paper; ctx.beginPath(); ctx.arc(X(pk.x),Y(S.H),4,0,7); ctx.fill(); ctx.stroke();
+  const t=Math.min(S.tf,Math.max(0,o.t||0)), p=S.at(t), bx=X(p.x), by=Y(p.y);
+  if(o.vel){
+    const k=Math.min(2.4,(ph*0.32)/Math.max(S.v,1));
+    arrow(ctx,bx,by,bx+S.vx*k,by,c.eg); arrow(ctx,bx,by,bx,by-p.vy*k,c.el);
+    label(ctx,'vx',bx+S.vx*k+4,by,c.eg); if(Math.abs(p.vy*k)>10) label(ctx,'vy',bx+5,by-p.vy*k,c.el,'left',p.vy>0?'bottom':'top');
+  }
+  balloon(ctx,bx,by,7,c.balloon);
+}
+
+/* ================= LAB 1: KINEMATICS ================= */
+const DATA=[
+  {n:'Practice trial 1',h:1.15,v:17.27,th:65.6,dx:23.4,t:3.28},
+  {n:'Practice trial 2',h:1.35,v:16.99,th:32.1,dx:28.5,t:1.98},
+  {n:'Practice trial 3',h:1.35,v:19.67,th:37.1,dx:39.7,t:2.53},
+  {n:'Practice trial 4',h:1.35,v:25.91,th:24.9,dx:55.0,t:2.34}
+];
+const K={ghosts:[],t:0,raf:0,preset:null,done:false};
+const kS=()=>proj(+$('k-v').value,+$('k-th').value,+$('k-h').value);
+const kC=mk('k-c',(ctx,w,h)=>drawWorld(ctx,w,h,kS(),{T:+$('k-T').value,Tlabel:K.preset?K.preset+' landed here':'target',ghosts:K.ghosts,t:K.t,vel:true}));
+function kStatus(S){
+  const el=$('k-status'), T=+$('k-T').value, miss=S.xf-T;
+  if(!K.done){el.className='pill info'; el.textContent=K.raf?'In the air':'Ready'; return;}
+  if(Math.abs(miss)<=1){el.className='pill hit'; el.textContent='Hit, '+fmt(Math.abs(miss),1)+' m from the target';}
+  else{el.className='pill miss'; el.textContent=(miss<0?'Short by ':'Long by ')+fmt(Math.abs(miss),1)+' m';}
+}
+function kUpdate(){
+  const S=kS();
+  $('k-v-o').textContent=fmt(S.v)+' m/s'; $('k-th-o').textContent=fmt(S.deg,1)+'°'; $('k-h-o').textContent=fmt(S.h)+' m'; $('k-T-o').textContent=fmt(+$('k-T').value,1)+' m';
+  $('k-vx').textContent=fmt(S.vx); $('k-vy').textContent=fmt(S.vy); $('k-tf').textContent=fmt(S.tf); $('k-xf').textContent=fmt(S.xf,1); $('k-H').textContent=fmt(S.H); $('k-vf').textContent=fmt(S.vf);
+  kStatus(S); kC.draw();
+}
+function kStop(){cancelAnimationFrame(K.raf); K.raf=0;}
+function kLaunch(){
+  kStop(); const S=kS(); K.done=false;
+  const finish=()=>{K.raf=0; K.t=S.tf; K.done=true; K.ghosts.push(S); if(K.ghosts.length>4) K.ghosts.shift(); kUpdate();};
+  if(reduce){finish(); return;}
+  const t0=performance.now();
+  const step=now=>{K.t=(now-t0)/1000; if(K.t>=S.tf){finish(); return;} kC.draw(); K.raf=requestAnimationFrame(step);};
+  K.raf=requestAnimationFrame(step); kStatus(S);
+}
+['k-v','k-th','k-h','k-T'].forEach(id=>$(id).addEventListener('input',()=>{kStop(); K.t=0; K.done=false; if(id!=='k-T'||K.preset) K.preset=null; kUpdate();}));
+$('k-go').addEventListener('click',kLaunch);
+$('k-clear').addEventListener('click',()=>{K.ghosts=[]; kUpdate();});
+DATA.forEach((d,i)=>{
+  const tr=document.createElement('tr');
+  tr.innerHTML='<td>'+d.n+'</td><td>'+fmt(d.h)+' m</td><td>'+fmt(d.v)+' m/s</td><td>'+fmt(d.th,1)+'°</td><td>'+fmt(d.dx,1)+' m</td><td>'+fmt(d.t)+' s</td><td><button type="button" aria-label="Load '+d.n+'">Load and launch</button></td>';
+  tr.querySelector('button').addEventListener('click',()=>{
+    $('k-v').value=d.v; $('k-th').value=d.th; $('k-h').value=d.h; $('k-T').value=d.dx; K.preset='Trial '+(i+1); K.t=0; K.done=false; kUpdate(); kLaunch();
+    $('k-c').scrollIntoView({block:'nearest',behavior:reduce?'auto':'smooth'});
+  });
+  $('k-data').appendChild(tr);
+});
+
+/* ================= LAB 2: FORCES ================= */
+const F={state:'held'};
+const fLen=(f,cap)=>f<=0?0:Math.min(cap,10+7.5*Math.sqrt(f));
+const fScene=mk('f-scene',(ctx,w,h)=>{
+  const c=theme(), x1=+$('f-x').value, k=+$('f-k').value, Fs=k*x1;
+  const m={l:14,r:20,t:26,b:26}, s=Math.min((w-m.l-m.r)/3.3,(h-m.t-m.b)/2.1), ox=m.l+2.7*s, oy=h-m.b;
+  const X=x=>ox+x*s, Y=y=>oy-y*s;
+  ctx.strokeStyle=c.line; ctx.lineWidth=2; line(ctx,0,oy+5,w,oy+5);
+  ctx.strokeStyle=c.ink; ctx.lineWidth=6; line(ctx,X(-2.55),Y(0),X(0.45),Y(0)); line(ctx,X(0),Y(0),X(0),Y(1.52)); line(ctx,X(-0.66),Y(0),X(-0.02),Y(0.98));
+  const L0=0.45, ux=-Math.cos(Math.PI/6), uy=-Math.sin(Math.PI/6);
+  ctx.lineWidth=1.5; for(let i=0;i<=9;i++){const mx=ux*(L0+i*0.2); line(ctx,X(mx),Y(0)-7,X(mx),Y(0)+7);}
+  const px=ux*(L0+x1), py=1.52+uy*(L0+x1);
+  ctx.save(); ctx.setLineDash([3,4]); ctx.strokeStyle=c.muted; ctx.lineWidth=1; line(ctx,X(px),Y(py),X(px),Y(0)); ctx.restore();
+  ctx.fillStyle=c.blue; ctx.fillRect(X(px)-3,Y(0)-16,6,16);
+  label(ctx,'peg',X(px),Y(0)+9,c.blue,'center','top');
+  ctx.strokeStyle=c.balloon; ctx.lineWidth=Math.max(1.5,5-2*x1); line(ctx,X(0),Y(1.52),X(px),Y(py));
+  const L=fLen(Fs,s*1.25), wl=fLen(M*G,60);
+  arrow(ctx,X(px),Y(py),X(px)-ux*L,Y(py)+uy*L,c.el,3);
+  arrow(ctx,X(0),Y(1.52),X(0)+ux*L,Y(1.52)-uy*L,c.eg,3);
+  arrow(ctx,X(px),Y(py),X(px),Y(py)+wl,c.muted,2.5);
+  balloon(ctx,X(px),Y(py),8,c.balloon);
+  if(Fs>0){label(ctx,'band on balloon',X(px)-12,Y(py)-10,c.el,'right','bottom'); label(ctx,'band on frame',X(0)+8,Y(1.52)-12,c.eg,'right','bottom');}
+  label(ctx,'Fg',X(px)-6,Y(py)+wl,c.muted,'right','bottom');
+});
+const fGraph=mk('f-graph',(ctx,w,h)=>{
+  const c=theme(), x1=+$('f-x').value, k=+$('f-k').value, Fs=k*x1;
+  const P=plot(ctx,w,h,1.8,220,'pullback x1 (m)','force Fs (N)',0.3,40,1,0);
+  ctx.save(); ctx.globalAlpha=.25; ctx.fillStyle=c.el; ctx.beginPath(); ctx.moveTo(P.X(0),P.Y(0)); ctx.lineTo(P.X(x1),P.Y(Fs)); ctx.lineTo(P.X(x1),P.Y(0)); ctx.fill(); ctx.restore();
+  ctx.strokeStyle=c.el; ctx.lineWidth=2.5; line(ctx,P.X(0),P.Y(0),P.X(1.8),P.Y(Math.min(220,k*1.8)));
+  ctx.fillStyle=c.ink; ctx.beginPath(); ctx.arc(P.X(x1),P.Y(Fs),5,0,7); ctx.fill();
+  label(ctx,fmt(Fs,1)+' N',P.X(x1)+(x1>1.3?-8:8),P.Y(Fs)-8,c.ink,x1>1.3?'right':'left','bottom');
+  if(x1>0.35) label(ctx,'area = ½kx1²',P.X(x1)-6,P.Y(0)-6,c.muted,'right','bottom');
+});
+function fForces(){
+  const k=+$('f-k').value, x1=+$('f-x').value, Fs=k*x1, a=40*Math.PI/180, W=M*G;
+  const B={x:Fs*Math.cos(a),y:Fs*Math.sin(a)}, g={x:0,y:-W};
+  if(F.state==='held') return {list:[['band',B,'el'],['hand',{x:-B.x,y:-B.y+W},'eg'],['Fg',g,'muted']],net:{x:0,y:0},text:'band, hand, gravity'};
+  if(F.state==='launch') return {list:[['band',B,'el'],['Fg',g,'muted']],net:{x:B.x,y:B.y-W},text:'band, gravity'};
+  return {list:[['Fg',g,'muted']],net:{x:0,y:-W},text:'gravity only'};
+}
+const fFbd=mk('f-fbd',(ctx,w,h)=>{
+  const c=theme(), R=fForces(), cx=w/2, cy=h/2, cap=Math.min(w,h)*0.4;
+  ctx.strokeStyle=c.grid; ctx.lineWidth=1; line(ctx,cx,10,cx,h-10); line(ctx,10,cy,w-10,cy);
+  R.list.forEach(([n,v,col])=>{
+    const mag=Math.hypot(v.x,v.y); if(mag<0.01) return; const L=fLen(mag,cap), ex=cx+v.x/mag*L, ey=cy-v.y/mag*L;
+    arrow(ctx,cx,cy,ex,ey,c[col],3);
+    label(ctx,n+' '+fmt(mag,1)+' N',ex+(v.x<-0.01?-6:6),ey+(v.y<0?12:-10),c[col],v.x<-0.01?'right':'left');
+  });
+  balloon(ctx,cx,cy,9,c.balloon);
+  label(ctx,'launch angle 40°',8,6,c.muted,'left','top');
+});
+function fUpdate(){
+  const x1=+$('f-x').value, k=+$('f-k').value, Fs=k*x1, R=fForces(), net=Math.hypot(R.net.x,R.net.y);
+  $('f-x-o').textContent=fmt(x1)+' m'; $('f-k-o').textContent=fmt(k,0)+' N/m';
+  $('f-F').textContent=fmt(Fs,1); $('f-W').textContent=fmt(M*G,2); $('f-ratio').textContent=fmt(Fs/(M*G),0)+' times'; $('f-area').textContent=fmt(0.5*k*x1*x1,1);
+  $('f-list').textContent=R.text; $('f-net').textContent=fmt(net,1); $('f-a').textContent=fmt(net/M,1);
+  fScene.draw(); fGraph.draw(); fFbd.draw();
+}
+['f-x','f-k'].forEach(id=>$(id).addEventListener('input',fUpdate));
+document.querySelectorAll('[data-fbd]').forEach(b=>b.addEventListener('click',()=>{
+  F.state=b.dataset.fbd; document.querySelectorAll('[data-fbd]').forEach(o=>o.setAttribute('aria-pressed',o===b?'true':'false')); fUpdate();
+}));
+
+/* ================= LAB 3: ENERGY ================= */
+const E={raf:0,PUSH:0.12,H0:1.52};
+function eState(){
+  const x1=+$('e-x').value, k=+$('e-k').value, v0=x1*Math.sqrt(k/M), S=proj(v0,+$('e-th').value,E.H0), s=+$('e-s').value/1000;
+  const tot=0.5*k*x1*x1+M*G*E.H0; let el=0,ek,eg,t=0,v,stage;
+  if(s<E.PUSH){const u=s/E.PUSH, x=x1*(1-u); el=0.5*k*x*x; ek=0.5*k*(x1*x1-x*x); eg=M*G*E.H0; v=Math.sqrt(2*ek/M); stage=s===0?'pulled back':'band pushing';}
+  else{t=(s-E.PUSH)/(1-E.PUSH)*S.tf; const p=S.at(t); v=Math.hypot(S.vx,p.vy); ek=0.5*M*v*v; eg=M*G*p.y;
+    stage=s>=1?'landing':Math.abs(t-S.tp)<S.tf*0.012?'highest point':t<S.tp?'rising':'falling';}
+  return {x1,k,v0,S,s,t,el,ek,eg,tot,v,stage};
+}
+const ePath=mk('e-path',(ctx,w,h)=>{const st=eState(); drawWorld(ctx,w,h,st.S,{t:st.t}); label(ctx,st.stage,w-12,6,theme().ink,'right','top');});
+const eBars=mk('e-bars',(ctx,w,h)=>{
+  const c=theme(), st=eState(), m={l:12,r:12,t:28,b:40}, ph=h-m.t-m.b, bw=(w-m.l-m.r)/4;
+  const bars=[['elastic',st.el,c.el],['kinetic',st.ek,c.ek],['gravity',st.eg,c.eg],['total',st.el+st.ek+st.eg,null]];
+  ctx.strokeStyle=c.ink; ctx.lineWidth=2; line(ctx,m.l,m.t+ph,w-m.r,m.t+ph);
+  ctx.save(); ctx.setLineDash([4,4]); ctx.strokeStyle=c.muted; ctx.lineWidth=1; line(ctx,m.l,m.t,w-m.r,m.t); ctx.restore();
+  bars.forEach(([n,v,col],i)=>{
+    const bh=Math.max(0,v/st.tot*ph), x=m.l+i*bw+bw*0.18, y=m.t+ph-bh, ww=bw*0.64;
+    if(col){ctx.fillStyle=col; ctx.fillRect(x,y,ww,bh);} else{ctx.strokeStyle=c.ink; ctx.lineWidth=2; ctx.strokeRect(x,y,ww,bh);}
+    label(ctx,fmt(v,1)+' J',x+ww/2,Math.max(y-5,12),c.ink,'center','bottom'); label(ctx,n,x+ww/2,m.t+ph+8,c.muted,'center','top');
+  });
+});
+function eUpdate(){
+  const st=eState();
+  $('e-x-o').textContent=fmt(st.x1)+' m'; $('e-k-o').textContent=fmt(st.k,0)+' N/m'; $('e-th-o').textContent=fmt(+$('e-th').value,0)+'°'; $('e-s-o').textContent=st.stage;
+  $('e-el').textContent=fmt(st.el,1); $('e-ek').textContent=fmt(st.ek,1); $('e-eg').textContent=fmt(st.eg,1); $('e-tot').textContent=fmt(st.el+st.ek+st.eg,1);
+  $('e-v0').textContent=fmt(st.v0); $('e-v').textContent=fmt(st.v);
+  ePath.draw(); eBars.draw();
+}
+function eStop(){cancelAnimationFrame(E.raf); E.raf=0; $('e-go').textContent='Play';}
+['e-x','e-k','e-th','e-s'].forEach(id=>$(id).addEventListener('input',()=>{eStop(); eUpdate();}));
+$('e-go').addEventListener('click',()=>{
+  if(E.raf){eStop(); return;}
+  if(reduce){$('e-s').value=1000; eUpdate(); return;}
+  const t0=performance.now(); $('e-go').textContent='Pause'; if(+$('e-s').value>=1000) $('e-s').value=0; const s0=+$('e-s').value;
+  const step=now=>{const s=s0+(now-t0)/5000*1000; $('e-s').value=Math.min(1000,s); eUpdate(); if(s>=1000){eStop(); return;} E.raf=requestAnimationFrame(step);};
+  E.raf=requestAnimationFrame(step);
+});
+$('e-peak').addEventListener('click',()=>{eStop(); const S=eState().S; $('e-s').value=Math.round((E.PUSH+(1-E.PUSH)*S.tp/S.tf)*1000); eUpdate();});
+
+/* ================= LAB 4: MOMENTUM ================= */
+const mC=mk('m-c',(ctx,w,h)=>{
+  const c=theme(), x1=+$('m-x').value, k=+$('m-k').value, m=+$('m-m').value, om=Math.sqrt(k/m), dt=Math.PI/(2*om), Fm=k*x1, J=x1*Math.sqrt(k*m), Fa=J/dt;
+  const P=plot(ctx,w,h,0.25,220,'time (s)','band force (N)',0.05,40,2,0);
+  ctx.save(); ctx.globalAlpha=.3; ctx.fillStyle=c.balloon; ctx.beginPath(); ctx.moveTo(P.X(0),P.Y(0));
+  for(let i=0;i<=60;i++){const t=dt*i/60; ctx.lineTo(P.X(t),P.Y(Fm*Math.cos(om*t)));} ctx.lineTo(P.X(dt),P.Y(0)); ctx.fill(); ctx.restore();
+  ctx.strokeStyle=c.balloon; ctx.lineWidth=2.5; ctx.beginPath();
+  for(let i=0;i<=60;i++){const t=dt*i/60, y=P.Y(Fm*Math.cos(om*t)); i?ctx.lineTo(P.X(t),y):ctx.moveTo(P.X(t),y);} ctx.stroke();
+  ctx.save(); ctx.setLineDash([5,4]); ctx.strokeStyle=c.ink; ctx.lineWidth=1.5; ctx.strokeRect(P.X(0),P.Y(Fa),P.X(dt)-P.X(0),P.Y(0)-P.Y(Fa)); ctx.restore();
+  label(ctx,'average force',P.X(dt)+8,P.Y(Fa),c.ink,'left');
+  label(ctx,'area = impulse = '+fmt(J,2)+' N·s',P.X(dt)+8,P.Y(Fa)+16,c.balloon,'left');
+});
+function mUpdate(){
+  const x1=+$('m-x').value, k=+$('m-k').value, m=+$('m-m').value, dt=Math.PI/2*Math.sqrt(m/k), J=x1*Math.sqrt(k*m);
+  $('m-x-o').textContent=fmt(x1)+' m'; $('m-k-o').textContent=fmt(k,0)+' N/m'; $('m-m-o').textContent=fmt(m)+' kg';
+  $('m-dt').textContent=fmt(dt,3); $('m-Fmax').textContent=fmt(k*x1,1); $('m-Favg').textContent=fmt(J/dt,1); $('m-J').textContent=fmt(J,2); $('m-p').textContent=fmt(J,2); $('m-v').textContent=fmt(J/m);
+  mC.draw();
+}
+['m-x','m-k','m-m'].forEach(id=>$(id).addEventListener('input',mUpdate));
+
+/* ================= LAB 5: ACCURACY ================= */
+const A={hand:[],frame:[]};
+function gauss(){let u=0,v=0; while(!u)u=Math.random(); while(!v)v=Math.random(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+function shot(kind){
+  const x0=0.82, k=90, th0=40;
+  if(kind==='hand'){const nom=proj(x0*Math.sqrt(k/M),th0,1.25).xf, x=x0*(1+0.08*gauss()), S=proj(x*Math.sqrt(k/M),th0+6*gauss(),1.15+0.2*Math.random()); return {err:S.xf-nom,v:S.v};}
+  const nom=proj(x0*Math.sqrt(k/M),th0,1.52).xf, x=x0*(1+0.01*gauss()), S=proj(x*Math.sqrt(k/M),th0+1.5*gauss(),1.52); return {err:S.xf-nom,v:S.v};
+}
+const aC=mk('a-c',(ctx,w,h)=>{
+  const c=theme(), m={l:86,r:16,t:14,b:34}, pw=w-m.l-m.r, ph=h-m.t-m.b, R=12, X=e=>m.l+(Math.max(-R,Math.min(R,e))+R)/(2*R)*pw;
+  ctx.save(); ctx.globalAlpha=.22; ctx.fillStyle=c.good; ctx.fillRect(X(-1),m.t,X(1)-X(-1),ph); ctx.restore();
+  ctx.lineWidth=1;
+  for(let e=-R;e<=R;e+=2){ctx.strokeStyle=c.grid; line(ctx,X(e),m.t,X(e),m.t+ph); if(e%4===0) label(ctx,(e>0?'+':'')+e,X(e),m.t+ph+6,c.muted,'center','top');}
+  ctx.strokeStyle=c.good; ctx.lineWidth=2; line(ctx,X(0),m.t,X(0),m.t+ph);
+  label(ctx,'distance from the target (m)',m.l+pw,h-3,c.muted,'right','bottom');
+  [['hand','Hand-held',c.bad],['frame','Frame',c.blue]].forEach(([key,name,col],i)=>{
+    const y=m.t+ph*(i?0.72:0.28); ctx.strokeStyle=c.line; ctx.lineWidth=1; line(ctx,m.l,y,m.l+pw,y); label(ctx,name,m.l-10,y,c.ink,'right');
+    A[key].forEach((s,j)=>{ctx.save(); ctx.globalAlpha=.75; ctx.fillStyle=col; ctx.beginPath(); ctx.arc(X(s.err),y+((j%5)-2)*3.2,5,0,7); ctx.fill(); ctx.restore();});
+  });
+});
+function aUpdate(){
+  [['hand','h'],['frame','f']].forEach(([key,p])=>{
+    const a=A[key], n=a.length; $('a-'+p+'-n').textContent=n; $('a-'+p+'-hit').textContent=n?a.filter(s=>Math.abs(s.err)<=1).length+' of '+n:'0';
+    if(n){const e=a.map(s=>s.err), v=a.map(s=>s.v); $('a-'+p+'-sp').textContent=fmt(Math.max(...e)-Math.min(...e),1)+' m'; $('a-'+p+'-v').textContent=fmt(Math.min(...v),1)+' to '+fmt(Math.max(...v),1)+' m/s';}
+    else{$('a-'+p+'-sp').textContent='none yet'; $('a-'+p+'-v').textContent='none yet';}
+  });
+  aC.draw();
+}
+function aFire(kind){for(let i=0;i<5;i++) A[kind].push(shot(kind)); if(A[kind].length>60) A[kind]=A[kind].slice(-60); aUpdate();}
+$('a-hand').addEventListener('click',()=>aFire('hand'));
+$('a-frame').addEventListener('click',()=>aFire('frame'));
+$('a-clear').addEventListener('click',()=>{A.hand=[]; A.frame=[]; aUpdate();});
+
+/* ================= QUIZ ================= */
+const QUIZ={
+ kinematics:[
+  {q:'At the highest point of its path, the balloon\'s velocity is',a:['zero','only horizontal','only vertical','the same as at launch'],c:1,why:'v_y is zero at the top, but v_x never changes, so the balloon is still moving sideways.'},
+  {q:'Two balloons leave at the same speed and height. One is aimed at 30° and one at 60°. Which is in the air longer?',a:['The 30° balloon','The 60° balloon','They tie','It depends on the mass'],c:1,why:'The 60° balloon has a bigger v_0y, so gravity takes longer to bring it back down.'}],
+ forces:[
+  {q:'After the balloon leaves the band (ignore air resistance), which forces act on it?',a:['The band force and gravity','A forward force and gravity','Only gravity','No forces'],c:2,why:'Nothing is touching the balloon anymore, so the only force is its weight F_g. It keeps moving forward because of its velocity, not a force.'},
+  {q:'You double the pullback. The band force at release',a:['stays the same','doubles','is 4 times bigger','is cut in half'],c:1,why:'F_s = kx_1, so the force goes up by the same factor as the stretch.'}],
+ energy:[
+  {q:'You double the pullback. The energy stored in the band',a:['stays the same','doubles','is 4 times bigger','is 8 times bigger'],c:2,why:'E_el = ½kx_1². The stretch is squared, so 2 times the stretch gives 4 times the energy.'},
+  {q:'At the highest point, the balloon\'s kinetic energy is',a:['zero','small but not zero','at its biggest','equal to the elastic energy'],c:1,why:'The balloon still has its horizontal velocity at the top, so it still has some kinetic energy.'}],
+ momentum:[
+  {q:'The band pushes with the same average force, but for twice as long. The balloon\'s change in momentum',a:['stays the same','doubles','is 4 times bigger','is cut in half'],c:1,why:'J = F_avg Δt = Δp. Twice the time with the same force gives twice the impulse.'},
+  {q:'A 0.2 kg balloon leaves the launcher at 17 m/s. Its momentum is',a:['0.012 kg·m/s','3.4 kg·m/s','28.9 kg·m/s','85 kg·m/s'],c:1,why:'p = mv = (0.2 kg)(17 m/s) = 3.4 kg·m/s.'}]
+};
+let score=0, total=0; Object.values(QUIZ).forEach(a=>total+=a.length);
+document.querySelectorAll('.quiz').forEach(box=>{
+  QUIZ[box.dataset.unit].forEach((Q,qi)=>{
+    const d=document.createElement('div'); d.className='qq';
+    const h=document.createElement('h3'); h.textContent='Check yourself '+(qi+1);
+    const p=document.createElement('p'); p.textContent=Q.q;
+    const opts=document.createElement('div'); opts.className='opts';
+    const why=document.createElement('p'); why.className='why'; why.setAttribute('aria-live','polite');
+    Q.a.forEach((t,i)=>{
+      const b=document.createElement('button'); b.type='button'; b.textContent=t;
+      b.addEventListener('click',()=>{
+        const ok=i===Q.c; opts.querySelectorAll('button').forEach((o,j)=>{o.disabled=true; if(j===Q.c) o.classList.add('right');});
+        if(!ok) b.classList.add('wrong'); else score++;
+        why.innerHTML='<b class="'+(ok?'ok':'no')+'">'+(ok?'Correct.':'Not quite.')+'</b> '; why.insertAdjacentHTML('beforeend',Q.why.replace(/_(\w+)/g,'<sub>$1</sub>'));
+        $('score').textContent='Quiz score: '+score+' of '+total;
+      });
+      opts.appendChild(b);
+    });
+    d.append(h,p,opts,why); box.appendChild(d);
+  });
+});
+
+/* ---------- first paint: Lab 5 opens with example shots ---------- */
+kUpdate(); fUpdate(); eUpdate(); mUpdate(); aFire('hand'); aFire('frame');
+})();
+</script>
+</body>
+</html>

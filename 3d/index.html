@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Water Balloon Launcher 3D Model</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,800&family=IBM+Plex+Mono:wght@400;500&family=Public+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* Layout idea: a one-screen workshop. The 3D yard fills the left, a narrow control bench sits on the right.
+   Same notebook look as the Water Balloon Launcher Lab site. */
+:root{
+  --paper:#f3f6fb; --surface:#ffffff; --ink:#14233b; --muted:#566782; --line:#b9c7db;
+  --blue:#1d58c7; --balloon:#e23d68; --good:#1b8a5a; --bad:#c2410c;
+  --sky:#d9e8fb; --grass:#7fae63;
+  --display:"Bricolage Grotesque","Arial Narrow",Arial,sans-serif;
+  --body:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#0c1830; --surface:#12213f; --ink:#e7eefb; --muted:#9db0cf; --line:#2c4474;
+    --blue:#7fb0ff; --balloon:#ff6b8f; --good:#4ad19a; --bad:#ff9a62; --sky:#0b1730; --grass:#2a4a35;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0c1830; --surface:#12213f; --ink:#e7eefb; --muted:#9db0cf; --line:#2c4474;
+  --blue:#7fb0ff; --balloon:#ff6b8f; --good:#4ad19a; --bad:#ff9a62; --sky:#0b1730; --grass:#2a4a35;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font:400 15px/1.5 var(--body);
+  display:grid;grid-template-columns:minmax(0,1fr) 348px;grid-template-rows:minmax(0,1fr)}
+:focus-visible{outline:3px solid var(--balloon);outline-offset:2px}
+sub{font-size:.72em;line-height:0}
+
+.stage{position:relative;min-width:0;min-height:0;overflow:hidden;background:var(--sky)}
+#view{display:block;width:100%;height:100%;touch-action:none;cursor:grab}
+#view:active{cursor:grabbing}
+.tags{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.tag{position:absolute;left:0;top:0;font:500 11.5px/1.25 var(--mono);color:var(--ink);background:var(--surface);
+  border:1.5px solid var(--ink);padding:2px 7px;white-space:nowrap;transform:translate(-50%,-140%);will-change:transform}
+.tag::after{content:"";position:absolute;left:50%;top:100%;width:1.5px;height:10px;background:var(--ink)}
+.cap{position:absolute;left:16px;bottom:16px;right:16px;max-width:520px;background:var(--surface);border:2px solid var(--ink);
+  padding:10px 14px;box-shadow:5px 5px 0 var(--balloon);display:flex;flex-direction:column;gap:2px}
+.cap small{font:500 .72rem var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--blue)}
+.cap span{font-size:.98rem}
+.hint{position:absolute;right:14px;top:12px;font:400 .72rem var(--mono);color:var(--ink);background:var(--surface);border:1px solid var(--line);padding:3px 8px}
+#fail{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;background:var(--paper)}
+#fail[hidden]{display:none}
+
+.panel{background:var(--surface);border-left:2px solid var(--ink);overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:16px}
+h1{font:800 1.7rem/1.02 var(--display);letter-spacing:-.015em;margin:0;text-wrap:balance}
+.eyebrow{font:500 .72rem var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--blue)}
+.grp{display:flex;flex-direction:column;gap:10px;border-top:1px dashed var(--line);padding-top:14px}
+.grp>h2{font:500 .72rem var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+button{font:600 .88rem var(--body);color:var(--ink);background:var(--surface);border:2px solid var(--ink);padding:7px 12px;cursor:pointer;border-radius:0}
+button:hover{background:var(--paper)}
+button.go{background:var(--balloon);color:#fff}
+:root[data-theme="dark"] button.go{color:#1a0a10}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) button.go{color:#1a0a10}}
+button.go:hover{filter:brightness(1.08)}
+button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
+.ctl{display:grid;grid-template-columns:1fr auto;gap:2px 10px;font-size:.9rem}
+.ctl input[type=range]{grid-column:1/-1;width:100%;accent-color:var(--balloon);margin:4px 0 0}
+.ctl output{font:500 .86rem var(--mono);font-variant-numeric:tabular-nums}
+.chk{display:flex;gap:8px;align-items:center;font-size:.9rem}
+.chk input{accent-color:var(--balloon);width:16px;height:16px;margin:0}
+.swatches{display:flex;gap:8px;flex-wrap:wrap}
+.swatches button{width:34px;height:34px;padding:0;border-width:2px}
+.swatches button[aria-pressed="true"]{outline:3px solid var(--balloon);outline-offset:2px}
+.tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.tile{border:1px solid var(--line);padding:7px 9px;display:flex;flex-direction:column;gap:1px;background:var(--paper)}
+.tile span{font:400 .7rem var(--mono);color:var(--muted)}
+.tile b{font:500 1.02rem var(--mono);font-variant-numeric:tabular-nums}
+.note{font-size:.82rem;color:var(--muted);margin:0}
+#result{font:500 .82rem var(--mono);padding:3px 10px;border:2px solid currentColor;align-self:flex-start;color:var(--muted)}
+#result.hit{color:var(--good)}#result.miss{color:var(--bad)}
+
+@media (max-width:820px){
+  html,body{height:auto}
+  body{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto}
+  .stage{height:68vh;min-height:340px}
+  .panel{border-left:0;border-top:2px solid var(--ink);overflow:visible}
+  .hint{display:none}
+}
+</style>
+</head>
+<body>
+
+<div class="stage" id="stage">
+  <canvas id="view" aria-label="3D model of the wooden frame water balloon launcher. Drag to rotate."></canvas>
+  <div class="tags" id="tags" aria-hidden="true"></div>
+  <div class="hint">drag to rotate · scroll or pinch to zoom</div>
+  <div class="cap" aria-live="polite"><small id="cap-k">Ready</small><span id="cap-t">Press Launch to watch a shot, or Build it to see how the frame goes together.</span></div>
+  <div id="fail" hidden><p>This browser could not start 3D graphics. Try opening the page in Chrome, Edge, Safari, or Firefox with hardware acceleration turned on.</p></div>
+</div>
+
+<aside class="panel">
+  <div>
+    <div class="eyebrow">AP Physics 1 · Water balloon project</div>
+    <h1>Frame launcher, 3D model</h1>
+    <p class="note" style="margin-top:6px"><a href="../" style="color:var(--blue)">Back to the lab website</a></p>
+  </div>
+
+  <div class="btns">
+    <button class="go" id="b-launch" type="button">Launch</button>
+    <button id="b-build" type="button">Build it step by step</button>
+  </div>
+  <span id="result">No shot yet</span>
+
+  <div class="grp">
+    <h2>Set up the shot</h2>
+    <label class="ctl"><span>Peg marker (pullback x<sub>1</sub>)</span> <output id="o-d"></output><input type="range" id="d" min="0.6" max="1.8" step="0.2" value="1.4"></label>
+    <label class="ctl"><span>Release height of the pouch</span> <output id="o-hp"></output><input type="range" id="hp" min="0.1" max="1.0" step="0.05" value="0.45"></label>
+    <label class="ctl"><span>Target distance</span> <output id="o-T"></output><input type="range" id="T" min="3" max="40" step="0.5" value="20"></label>
+  </div>
+
+  <div class="grp">
+    <h2>Prediction</h2>
+    <div class="tiles">
+      <div class="tile"><span>launch angle θ0</span><b id="r-th"></b></div>
+      <div class="tile"><span>stored energy (J)</span><b id="r-E"></b></div>
+      <div class="tile"><span>launch speed v0 (m/s)</span><b id="r-v"></b></div>
+      <div class="tile"><span>time in air (s)</span><b id="r-tf"></b></div>
+      <div class="tile"><span>landing Δx (m)</span><b id="r-xf"></b></div>
+      <div class="tile"><span>max height H (m)</span><b id="r-H"></b></div>
+    </div>
+    <p class="note">Uses ½kx<sub>1</sub>² = ½mv<sub>0</sub>² with m = 0.2 kg and k = 20 N/m. That k matches our real 1.8 m launch (about 18 m/s). The angle comes from the frame: the band pulls the pouch toward the tops of the posts.</p>
+  </div>
+
+  <div class="grp">
+    <h2>View</h2>
+    <div class="btns" role="group" aria-label="Camera view">
+      <button type="button" data-view="iso">3D</button>
+      <button type="button" data-view="side">Side</button>
+      <button type="button" data-view="front">Front</button>
+      <button type="button" data-view="top">Top</button>
+    </div>
+    <label class="chk"><input type="checkbox" id="c-labels" checked> Show part labels</label>
+    <label class="chk"><input type="checkbox" id="c-follow" checked> Camera follows the balloon</label>
+    <label class="chk"><input type="checkbox" id="c-slow"> Slow motion</label>
+  </div>
+
+  <div class="grp">
+    <h2>Paint color</h2>
+    <div class="swatches" id="swatches" role="group" aria-label="Paint color"></div>
+  </div>
+</aside>
+
+<script src="lib/three.min.js"></script>
+<script src="lib/OrbitControls.js"></script>
+<script>
+(function(){
+"use strict";
+const $=id=>document.getElementById(id), fmt=(v,d=2)=>Number(v).toFixed(d);
+const G=9.8, M=0.2, K=20, H0=1.52, HALF=0.45;           // post height 5 ft, posts 3 ft apart
+const stage=$('stage'), canvas=$('view');
+let renderer=null;
+try{ if(window.THREE&&THREE.OrbitControls) renderer=new THREE.WebGLRenderer({canvas,antialias:true}); }catch(e){ renderer=null; }
+if(!renderer){ $('fail').hidden=false; return; }
+const V=(x,y,z)=>new THREE.Vector3(x,y,z), UP=V(0,1,0);
+const ease=u=>u<0?0:u>1?1:u*u*(3-2*u);
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+/* ---------- scene ---------- */
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+const scene=new THREE.Scene(), camera=new THREE.PerspectiveCamera(42,1,0.05,500);
+const controls=new THREE.OrbitControls(camera,canvas);
+controls.enableDamping=true; controls.dampingFactor=0.1; controls.maxPolarAngle=Math.PI/2-0.03; controls.minDistance=1.2; controls.maxDistance=90;
+const hemi=new THREE.HemisphereLight(0xffffff,0x6b8f5a,0.8); scene.add(hemi);
+const sun=new THREE.DirectionalLight(0xffffff,0.85); sun.position.set(3,9,6); sun.castShadow=true;
+sun.shadow.mapSize.set(2048,2048); Object.assign(sun.shadow.camera,{left:-5,right:5,top:5,bottom:-5,near:1,far:25}); sun.shadow.bias=-0.0005; scene.add(sun);
+const groundMat=new THREE.MeshStandardMaterial({color:0x8ab56c,roughness:1});
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(600,600),groundMat); ground.rotation.x=-Math.PI/2; ground.receiveShadow=true; scene.add(ground);
+function applyTheme(){
+  const sky=new THREE.Color(css('--sky')||'#d9e8fb'), grass=new THREE.Color(css('--grass')||'#8ab56c');
+  scene.background=sky; scene.fog=new THREE.Fog(sky.getHex(),70,260); groundMat.color.copy(grass);
+  const dark=sky.getHSL({h:0,s:0,l:0}).l<0.4; hemi.intensity=dark?0.42:0.6; sun.intensity=dark?0.42:0.55;
+}
+applyTheme();
+new MutationObserver(applyTheme).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',applyTheme);
+
+function textSprite(text,h,color){
+  const c=document.createElement('canvas'), g=c.getContext('2d'), F='700 54px Arial, sans-serif';
+  g.font=F; const w=Math.ceil(g.measureText(text).width)+20; c.width=w; c.height=72;
+  g.font=F; g.textAlign='center'; g.textBaseline='middle'; g.fillStyle=color||'#ffffff'; g.fillText(text,w/2,38);
+  const s=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),transparent:true,depthWrite:false}));
+  s.scale.set(h*w/72,h,1); return s;
+}
+/* distance lines on the grass every 5 m */
+const lineMat=new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:0.55});
+for(let x=5;x<=45;x+=5){
+  const m=new THREE.Mesh(new THREE.PlaneGeometry(0.06,5),lineMat); m.rotation.x=-Math.PI/2; m.position.set(x,0.012,0); scene.add(m);
+  const s=textSprite(x+' m',0.45); s.position.set(x,0.35,2.9); scene.add(s);
+}
+
+/* ---------- materials ---------- */
+const wood=new THREE.MeshStandardMaterial({color:0xc79a63,roughness:0.85});
+const metal=new THREE.MeshStandardMaterial({color:0x8d96a3,roughness:0.4,metalness:0.6});
+const bandMat=new THREE.MeshStandardMaterial({color:0xe0a22b,roughness:0.6});
+const pouchMat=new THREE.MeshStandardMaterial({color:0x2a2f3a,roughness:0.9});
+const pegMat=new THREE.MeshStandardMaterial({color:0x1d58c7,roughness:0.6});
+const balloonMat=new THREE.MeshStandardMaterial({color:0xe23d68,roughness:0.25});
+const stripeMat=new THREE.MeshStandardMaterial({color:0xffffff,roughness:0.7});
+
+/* ---------- parts, grouped into build steps ---------- */
+const steps=[];
+function step(k,cap){const g=new THREE.Group(); scene.add(g); steps.push({k,cap,g}); return g;}
+function place(m,a,b){m.position.copy(a).add(b).multiplyScalar(0.5); m.quaternion.setFromUnitVectors(UP,b.clone().sub(a).normalize()); m.scale.y=a.distanceTo(b);}
+function beam(g,a,b,t,mat){const m=new THREE.Mesh(new THREE.BoxGeometry(t,1,t),mat||wood); place(m,a,b); m.castShadow=m.receiveShadow=true; g.add(m); return m;}
+function rod(g,a,b,r,mat){const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,1,12),mat); place(m,a,b); m.castShadow=true; g.add(m); return m;}
+const T=0.09, RB=-2.0, RF=0.44;                             // beam thickness, rail back and front ends (8 ft rail)
+
+const gRails=step('Base rails','Two 8 ft base rails go on the ground. They point at the target.');
+[-HALF,HALF].forEach(z=>beam(gRails,V(RB,T/2,z),V(RF,T/2,z),T));
+const gCross=step('Cross pieces','Cross pieces join the rails so the base stays square, 3 ft wide.');
+[RB+T/2,RF-T/2].forEach(x=>beam(gCross,V(x,T/2,-HALF+T/2),V(x,T/2,HALF-T/2),T));
+const gPosts=step('Posts','Two 5 ft posts stand on the rails. They replace the two people.');
+[-HALF,HALF].forEach(z=>beam(gPosts,V(0,T,z),V(0,H0,z),T));
+const gBrace=step('Braces','Diagonal braces keep the posts from bending when the band pulls on them.');
+[-HALF,HALF].forEach(z=>beam(gBrace,V(-0.66,T,z),V(-0.01,0.98,z),T*0.8));
+const gStake=step('Stakes','Stakes hold the base down so the frame cannot slide, tip, or turn.');
+[[RB+0.12,-1],[RB+0.12,1],[RF-0.12,-1],[RF-0.12,1]].forEach(([x,s])=>rod(gStake,V(x,-0.12,s*(HALF+0.1)),V(x,0.24,s*(HALF+0.05)),0.016,metal));
+const gMarks=step('Distance markers','Distance markers are painted on the rails every 0.2 m, from 0.6 m to 1.8 m.');
+for(let i=0;i<7;i++){
+  const d=0.6+0.2*i;
+  [-HALF,HALF].forEach(z=>{const m=new THREE.Mesh(new THREE.BoxGeometry(0.025,0.004,T+0.004),stripeMat); m.position.set(-d,T+0.002,z); gMarks.add(m);});
+  const s=textSprite(fmt(d,1),0.1); s.position.set(-d,0.07,HALF+0.17); gMarks.add(s);
+}
+const gBand=step('Band and pouch','The band is tied to the top of each post, so it is always at the same height and width.');
+[-HALF,HALF].forEach(z=>{const h=new THREE.Mesh(new THREE.TorusGeometry(0.035,0.01,8,16),metal); h.position.set(-T/2-0.03,H0-0.04,z); h.rotation.y=Math.PI/2; h.castShadow=true; gBand.add(h);});
+const strands=[-HALF,HALF].map(z=>{const m=new THREE.Mesh(new THREE.CylinderGeometry(0.012,0.012,1,8),bandMat); m.castShadow=true; gBand.add(m); return {m,a:V(-T/2-0.03,H0-0.04,z)};});
+const pouch=new THREE.Mesh(new THREE.SphereGeometry(0.075,16,12),pouchMat); pouch.scale.set(0.35,0.9,1.1); pouch.castShadow=true; gBand.add(pouch);
+const gPeg=step('Peg and balloon','A peg at the chosen marker is the pullback stop. Pull the pouch back to the peg every time.');
+const pegs=[-HALF,HALF].map(z=>{const m=new THREE.Mesh(new THREE.CylinderGeometry(0.02,0.02,0.24,12),pegMat); m.castShadow=true; m.position.set(0,T+0.12,z); gPeg.add(m); return m;});
+const pegLine=rod(gPeg,V(0,T+0.2,-HALF),V(0,T+0.2,HALF),0.004,pegMat);
+const balloon=new THREE.Group();
+{const b=new THREE.Mesh(new THREE.SphereGeometry(0.065,24,18),balloonMat); b.scale.set(1,1.12,1); b.castShadow=true; balloon.add(b);
+ const k=new THREE.Mesh(new THREE.ConeGeometry(0.014,0.03,10),balloonMat); k.position.y=-0.082; balloon.add(k);}
+balloon.scale.setScalar(1.3); scene.add(balloon);
+
+/* things in the yard: target, trail, landing flag, splash */
+const target=new THREE.Group();
+{const r=new THREE.Mesh(new THREE.RingGeometry(0.86,1,48),new THREE.MeshBasicMaterial({color:0xffffff})); r.rotation.x=-Math.PI/2; r.position.y=0.02; target.add(r);
+ const c=new THREE.Mesh(new THREE.CircleGeometry(0.86,48),new THREE.MeshBasicMaterial({color:0x1b8a5a,transparent:true,opacity:0.45})); c.rotation.x=-Math.PI/2; c.position.y=0.018; target.add(c);
+ const b=new THREE.Mesh(new THREE.CircleGeometry(0.16,24),new THREE.MeshBasicMaterial({color:0xffffff})); b.rotation.x=-Math.PI/2; b.position.y=0.022; target.add(b);}
+scene.add(target);
+const TRAILN=600, trailPos=new Float32Array(TRAILN*3), trailGeo=new THREE.BufferGeometry();
+trailGeo.setAttribute('position',new THREE.BufferAttribute(trailPos,3)); trailGeo.setDrawRange(0,0);
+const trail=new THREE.Line(trailGeo,new THREE.LineBasicMaterial({color:0xe23d68})); trail.frustumCulled=false; scene.add(trail);
+let trailN=0;
+const flag=new THREE.Group(); flag.visible=false; scene.add(flag);
+rod(flag,V(0,0,0),V(0,1.3,0),0.015,metal); let flagText=null;
+const splat=new THREE.Mesh(new THREE.CircleGeometry(1,28),new THREE.MeshBasicMaterial({color:0x3b8fe0,transparent:true,opacity:0.6})); splat.rotation.x=-Math.PI/2; splat.visible=false; scene.add(splat);
+const dropMat=new THREE.MeshStandardMaterial({color:0x5aa9f0,roughness:0.2,transparent:true});
+const drops=Array.from({length:26},()=>{const m=new THREE.Mesh(new THREE.SphereGeometry(0.03,8,6),dropMat); m.visible=false; scene.add(m); return {m,v:V(0,0,0)};});
+const blob=new THREE.Mesh(new THREE.CircleGeometry(0.09,16),new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:0.25})); blob.rotation.x=-Math.PI/2; blob.position.y=0.015; scene.add(blob);
+
+/* ---------- shot physics ---------- */
+const REST=V(0,H0,0), IDLE=V(-0.07,H0-0.06,0);
+function shot(){
+  const d=+$('d').value, hp=+$('hp').value, th=Math.atan2(H0-hp,d), v=d*Math.sqrt(K/M), vx=v*Math.cos(th), vy=v*Math.sin(th);
+  const tf=(vy+Math.sqrt(vy*vy+2*G*H0))/G;
+  return {d,hp,th,v,vx,vy,tf,xf:vx*tf,H:H0+vy*vy/(2*G),E:0.5*K*d*d,P:V(-d,hp,0),dir:V(Math.cos(th),Math.sin(th),0)};
+}
+const S={phase:'idle',t:0,shot:shot(),pouch:IDLE.clone(),wob:9,splashT:9,build:-1,goal:null};
+function caption(k,t){$('cap-k').textContent=k; $('cap-t').textContent=t;}
+function setResult(cls,t){const r=$('result'); r.className=cls; r.textContent=t;}
+
+function clearShot(){
+  S.phase='idle'; S.t=0; S.wob=9; S.pouch.copy(IDLE); trailN=0; trailGeo.setDrawRange(0,0);
+  flag.visible=false; splat.visible=false; drops.forEach(o=>o.m.visible=false); S.splashT=9; balloon.visible=true; $('b-launch').textContent='Launch';
+}
+function refresh(){
+  const s=S.shot=shot();
+  $('o-d').textContent=fmt(s.d,1)+' m'; $('o-hp').textContent=fmt(s.hp)+' m'; $('o-T').textContent=fmt(+$('T').value,1)+' m';
+  $('r-th').textContent=fmt(s.th*180/Math.PI,1)+'°'; $('r-E').textContent=fmt(s.E,1); $('r-v').textContent=fmt(s.v,1);
+  $('r-tf').textContent=fmt(s.tf); $('r-xf').textContent=fmt(s.xf,1); $('r-H').textContent=fmt(s.H);
+  pegs.forEach(p=>p.position.x=-s.d); pegLine.position.x=-s.d; target.position.x=+$('T').value;
+}
+['d','hp','T'].forEach(id=>$(id).addEventListener('input',()=>{
+  if(S.phase!=='idle'){clearShot(); setResult('','No shot yet'); caption('Ready','Press Launch to watch this shot.'); endAuto();}
+  refresh();
+}));
+
+/* ---------- camera ---------- */
+const VIEWS={iso:[V(-4.6,2.7,4.9),V(-0.7,0.75,0)],side:[V(-0.8,0.95,7.2),V(-0.8,0.8,0)],front:[V(6.4,1.3,0),V(-0.6,0.8,0)],top:[V(-0.8,8.6,0.01),V(-0.8,0,0)],load:[V(-4.4,1.9,3.9),V(-0.8,0.85,0)]};
+function goTo(pos,tgt,once){S.goal={pos:pos.clone(),tgt:tgt.clone(),once:!!once};}
+function endAuto(){controls.enabled=true;}
+camera.position.copy(VIEWS.iso[0]); controls.target.copy(VIEWS.iso[1]);
+controls.addEventListener('start',()=>{if(S.goal&&S.goal.once) S.goal=null;});
+document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>{const v=VIEWS[b.dataset.view]; goTo(v[0],v[1],true);}));
+
+/* ---------- part labels ---------- */
+const TAGS=[
+  ['post, 5 ft (1.52 m)',()=>V(0,H0+0.02,-HALF),gPosts],
+  ['brace',()=>V(-0.36,0.56,HALF),gBrace],
+  ['base rail, 8 ft (2.4 m)',()=>V(-1.0,T,-HALF),gRails],
+  ['posts 3 ft (0.9 m) apart',()=>V(RF,T,0),gCross],
+  ['stake',()=>V(RB+0.12,0.24,HALF+0.05),gStake],
+  ['distance markers',()=>V(-1.6,T,HALF),gMarks],
+  ['band',()=>V((strands[1].a.x+S.pouch.x)/2,(strands[1].a.y+S.pouch.y)/2,HALF/2),gBand],
+  ['peg (pullback stop)',()=>V(-S.shot.d,T+0.24,-HALF),gPeg]
+].map(([text,pos,g])=>{const el=document.createElement('div'); el.className='tag'; el.textContent=text; $('tags').appendChild(el); return {el,pos,g};});
+const tmp=V(0,0,0);
+function updateTags(w,h){
+  const on=$('c-labels').checked&&(S.phase==='idle'||S.phase==='pull'||S.phase==='hold');
+  TAGS.forEach(t=>{
+    if(!on||!t.g.visible){t.el.style.display='none'; return;}
+    tmp.copy(t.pos()); tmp.y+=t.g.position.y; tmp.project(camera);
+    if(tmp.z>1||Math.abs(tmp.x)>1.05||Math.abs(tmp.y)>1.05){t.el.style.display='none'; return;}
+    t.el.style.display='block'; t.el.style.transform='translate('+((tmp.x*0.5+0.5)*w).toFixed(1)+'px,'+((-tmp.y*0.5+0.5)*h).toFixed(1)+'px) translate(-50%,-140%)';
+  });
+}
+
+/* ---------- launch animation ---------- */
+const TREL=Math.PI/2*Math.sqrt(M/K);                         // real push time for a spring launch, about 0.16 s
+function launch(){
+  if(S.build>=0) finishBuild();
+  clearShot(); refresh(); S.phase='pull'; S.t=0; setResult('','Loading'); $('b-launch').textContent='Launch again';
+  caption('Step 1 · Load','Pull the pouch back to the peg at the '+fmt(S.shot.d,1)+' m marker.');
+  if($('c-follow').checked){controls.enabled=false; goTo(VIEWS.load[0],VIEWS.load[1],false);}
+}
+function land(){
+  const s=S.shot, miss=s.xf-(+$('T').value);
+  S.phase='landed'; balloon.visible=false; S.splashT=0;
+  splat.position.set(s.xf,0.016,0); splat.scale.setScalar(0.01); splat.visible=true;
+  drops.forEach(o=>{const a=Math.random()*Math.PI*2, sp=1+Math.random()*3; o.m.position.set(s.xf,0.05,0); o.v.set(Math.cos(a)*sp+s.vx*0.12,2+Math.random()*3.5,Math.sin(a)*sp); o.m.visible=true;});
+  if(flagText) flag.remove(flagText); flagText=textSprite(fmt(s.xf,1)+' m',0.5); flagText.position.set(0,1.65,0); flag.add(flagText); flag.position.set(s.xf,0,0); flag.visible=true;
+  const hit=Math.abs(miss)<=1;
+  setResult(hit?'hit':'miss',hit?'Hit, '+fmt(Math.abs(miss),1)+' m from the target':(miss<0?'Short by ':'Long by ')+fmt(Math.abs(miss),1)+' m');
+  caption('Step 5 · Landing','Landed '+fmt(s.xf,1)+' m away after '+fmt(s.tf)+' s. '+(hit?'That is a hit.':'Change the marker or the release height and try again.'));
+  if($('c-follow').checked){const far=Math.max(s.xf,+$('T').value), cx=far/2-1, hf=Math.atan(Math.tan(camera.fov*Math.PI/360)*camera.aspect), dist=(far/2+3.5)/Math.tan(hf); goTo(V(cx-1.5,dist*0.38+1,dist*0.93),V(cx,0.6,0),true);}
+  controls.enabled=true;
+}
+function stepShot(dt){
+  const s=S.shot, slow=$('c-slow').checked?0.25:1;
+  if(S.phase==='pull'){
+    S.t+=dt; const u=ease(S.t/1.3); S.pouch.lerpVectors(IDLE,s.P,u);
+    if(S.t>=1.3){S.phase='hold'; S.t=0; caption('Step 2 · Hold','The band is stretched and the balloon is at rest. Stored elastic energy: ½kx₁² = '+fmt(s.E,1)+' J.');}
+  }else if(S.phase==='hold'){
+    S.t+=dt; S.pouch.copy(s.P);
+    if(S.t>=1.1){S.phase='release'; S.t=0; caption('Step 3 · Release','The band pushes the balloon. Elastic energy turns into kinetic energy, and the push gives the balloon an impulse.');}
+  }else if(S.phase==='release'){
+    S.t+=dt*0.3*slow; const u=Math.min(1,S.t/TREL); S.pouch.lerpVectors(s.P,REST,1-Math.cos(Math.PI/2*u));
+    if(u>=1){S.phase='flight'; S.t=0; S.wob=0; setResult('','In the air'); caption('Step 4 · Flight','The balloon leaves at v₀ = '+fmt(s.v,1)+' m/s and '+fmt(s.th*180/Math.PI,0)+'°. In the air, the only force is gravity.');}
+  }else if(S.phase==='flight'){
+    S.t+=dt*slow; if(S.t>=s.tf){S.t=s.tf; land();}
+  }
+  if(S.wob<3){S.wob+=dt*(S.phase==='flight'?slow:1); S.pouch.copy(REST).addScaledVector(s.dir,0.32*Math.sin(16*S.wob)*Math.exp(-4*S.wob)); if(S.wob>=3&&S.phase!=='idle') S.pouch.copy(REST);}
+  /* balloon */
+  if(S.phase==='flight'||S.phase==='landed'){
+    const t=S.t; balloon.position.set(s.vx*t,Math.max(0.085,H0+s.vy*t-0.5*G*t*t),0); balloon.rotation.z=-t*4;
+    if(S.phase==='flight'&&trailN<TRAILN){trailPos.set([balloon.position.x,balloon.position.y,0],trailN*3); trailN++; trailGeo.attributes.position.needsUpdate=true; trailGeo.setDrawRange(0,trailN);}
+  }else{balloon.position.copy(S.pouch); balloon.position.x+=0.09; balloon.position.y+=0.04; balloon.rotation.z=0;}
+  blob.position.x=balloon.position.x; blob.position.z=balloon.position.z; blob.visible=balloon.visible&&S.phase==='flight';
+  /* splash */
+  if(S.splashT<1.2){
+    S.splashT+=dt; splat.scale.setScalar(Math.min(0.75,S.splashT*4));
+    drops.forEach(o=>{o.v.y-=G*dt; o.m.position.addScaledVector(o.v,dt); if(o.m.position.y<0.02){o.m.visible=false;}});
+    dropMat.opacity=Math.max(0,1-S.splashT/1.2); if(S.splashT>=1.2) drops.forEach(o=>o.m.visible=false);
+  }
+  /* band and pouch follow the pouch point */
+  pouch.position.copy(S.pouch); strands.forEach(o=>place(o.m,o.a,S.pouch));
+  const stretch=S.pouch.distanceTo(REST); strands.forEach(o=>{o.m.scale.x=o.m.scale.z=Math.max(0.55,1-stretch*0.22);});
+  /* follow camera */
+  if(S.phase==='flight'&&!$('c-follow').checked&&S.goal&&!S.goal.once){S.goal=null; controls.enabled=true;}
+  if(S.phase==='flight'&&$('c-follow').checked){
+    const b=balloon.position; goTo(V(b.x-3.5-b.x*0.06,Math.max(2.2,b.y*0.55+1.8),7.5+b.x*0.28),V(b.x+1.2,Math.max(0.9,b.y*0.8),0),false);
+  }
+}
+
+/* ---------- build animation ---------- */
+function finishBuild(){S.build=-1; steps.forEach(o=>{o.g.visible=true; o.g.position.y=0;}); balloon.visible=true; $('b-build').textContent='Build it step by step';}
+function startBuild(){
+  clearShot(); setResult('','No shot yet'); endAuto(); S.build=0; steps.forEach(o=>{o.g.visible=false;}); balloon.visible=false;
+  $('b-build').textContent='Skip the build'; goTo(VIEWS.iso[0],VIEWS.iso[1],true);
+}
+const STEPT=1.9;
+function stepBuild(dt){
+  if(S.build<0) return; S.build+=dt;
+  const i=Math.floor(S.build/STEPT);
+  if(i>=steps.length){finishBuild(); caption('Built','The frame is done. Press Launch to test it.'); return;}
+  steps.forEach((o,j)=>{
+    if(j>i){o.g.visible=false; return;} o.g.visible=true;
+    o.g.position.y=j<i?0:(1-ease((S.build-i*STEPT)/0.8))*1.6;
+  });
+  balloon.visible=i>=steps.length-1; if(balloon.visible) balloon.position.y+=gPeg.position.y;
+  caption('Build step '+(i+1)+' of '+steps.length+' · '+steps[i].k,steps[i].cap);
+}
+$('b-launch').addEventListener('click',launch);
+$('b-build').addEventListener('click',()=>{if(S.build>=0){finishBuild(); caption('Built','The frame is done. Press Launch to test it.');} else startBuild();});
+
+/* ---------- paint ---------- */
+[['Bare wood','#c79a63',0.85],['Red','#d7263d',0.45],['Blue','#1d58c7',0.45],['Yellow','#f2b705',0.45],['Black','#20242c',0.45]].forEach(([name,col,rough],i)=>{
+  const b=document.createElement('button'); b.type='button'; b.style.background=col; b.title=name; b.setAttribute('aria-label',name); b.setAttribute('aria-pressed',i===0?'true':'false');
+  b.addEventListener('click',()=>{wood.color.set(col); wood.roughness=rough; stripeMat.color.set(name==='Yellow'?'#20242c':'#ffffff');
+    document.querySelectorAll('#swatches button').forEach(o=>o.setAttribute('aria-pressed',o===b?'true':'false'));});
+  $('swatches').appendChild(b);
+});
+
+/* ---------- loop ---------- */
+let W=0,Hh=0;
+function size(){const r=stage.getBoundingClientRect(), w=Math.max(200,Math.round(r.width)), h=Math.max(200,Math.round(r.height)); if(w===W&&h===Hh) return; W=w; Hh=h; renderer.setSize(w,h,false); camera.aspect=w/h; camera.updateProjectionMatrix();}
+if(window.ResizeObserver) new ResizeObserver(size).observe(stage); window.addEventListener('resize',size);
+let last=performance.now();
+function frame(now){
+  const dt=Math.min(0.05,Math.max(0,(now-last)/1000)); last=now; size();
+  stepShot(dt); stepBuild(dt);
+  if(S.goal){
+    const a=1-Math.exp(-(S.goal.once?5:7)*dt); camera.position.lerp(S.goal.pos,a); controls.target.lerp(S.goal.tgt,a);
+    if(S.goal.once&&camera.position.distanceTo(S.goal.pos)<0.03) S.goal=null;
+    if(S.phase==='landed'&&S.goal&&!S.goal.once) S.goal=null;
+  }
+  controls.update(); renderer.render(scene,camera); updateTags(W,Hh);
+  requestAnimationFrame(frame);
+}
+refresh(); clearShot(); size();
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
